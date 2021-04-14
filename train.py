@@ -1,5 +1,41 @@
-# % matplotlib
-# inline
+# # % matplotlib
+# # inline
+# import matplotlib.pyplot as plt
+# import os
+# from rdkit import Chem
+# from rdkit import RDPaths
+#
+# import dgl
+# import numpy as np
+# import random
+# import torch
+# import torch.nn as nn
+# import torch.nn.functional as F
+# from torch.utils.data import DataLoader
+# from torch.utils.data import Dataset
+# # from dgl import model_zoo
+# from dgllife.model import model_zoo
+# # from dgllife.model.gnn import attentivefp
+# from dgllife.utils import mol_to_complete_graph, mol_to_bigraph
+#
+# from dgllife.utils import atom_type_one_hot
+# from dgllife.utils import atom_degree_one_hot
+# from dgllife.utils import atom_formal_charge
+# from dgllife.utils import atom_num_radical_electrons
+# from dgllife.utils import atom_hybridization_one_hot
+# from dgllife.utils import atom_total_num_H_one_hot
+# from dgllife.utils import CanonicalAtomFeaturizer
+# from dgllife.utils import CanonicalBondFeaturizer
+# from dgllife.utils import ConcatFeaturizer
+# from dgllife.utils import BaseAtomFeaturizer
+# from dgllife.utils import BaseBondFeaturizer
+#
+# from dgllife.utils import one_hot_encoding
+# from dgl.data.utils import split_dataset
+#
+# from functools import partial
+# from sklearn.metrics import roc_auc_score
+
 import matplotlib.pyplot as plt
 import os
 from rdkit import Chem
@@ -13,24 +49,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-# from dgl import model_zoo
-from dgllife.model import model_zoo
-from dgllife.model.gnn import attentivefp
-from dgllife.utils import mol_to_complete_graph, mol_to_bigraph
+from dgl import model_zoo
 
-from dgllife.utils import atom_type_one_hot
-from dgllife.utils import atom_degree_one_hot
-from dgllife.utils import atom_formal_charge
-from dgllife.utils import atom_num_radical_electrons
-from dgllife.utils import atom_hybridization_one_hot
-from dgllife.utils import atom_total_num_H_one_hot
-from dgllife.utils import CanonicalAtomFeaturizer
-from dgllife.utils import CanonicalBondFeaturizer
-from dgllife.utils import ConcatFeaturizer
-from dgllife.utils import BaseAtomFeaturizer
-from dgllife.utils import BaseBondFeaturizer
+# from dgl.data.chem.utils import mol_to_complete_graph, mol_to_bigraph
 
-from dgllife.utils import one_hot_encoding
+from dgl.data.chem.utils import mol_to_complete_graph, mol_to_bigraph
+from dgl.data.chem.utils import atom_type_one_hot
+from dgl.data.chem.utils import atom_degree_one_hot
+from dgl.data.chem.utils import atom_formal_charge
+from dgl.data.chem.utils import atom_num_radical_electrons
+from dgl.data.chem.utils import atom_hybridization_one_hot
+from dgl.data.chem.utils import atom_total_num_H_one_hot
+from dgl.data.chem.utils import one_hot_encoding
+from dgl.data.chem import CanonicalAtomFeaturizer
+from dgl.data.chem import CanonicalBondFeaturizer
+from dgl.data.chem import ConcatFeaturizer
+from dgl.data.chem import BaseAtomFeaturizer
+from dgl.data.chem import BaseBondFeaturizer
+
+from dgl.data.chem import one_hot_encoding
 from dgl.data.utils import split_dataset
 
 from functools import partial
@@ -126,7 +163,6 @@ def run_a_train_epoch(n_epochs, epoch, model, data_loader, loss_criterion, optim
     losses = []
 
     for batch_id, batch_data in enumerate(data_loader):
-        batch_data
         smiles, bg, labels, masks = batch_data
         if torch.cuda.is_available():
             bg.to(torch.device('cuda:0'))
@@ -150,6 +186,7 @@ def run_a_train_epoch(n_epochs, epoch, model, data_loader, loss_criterion, optim
 
 
 model = model_zoo.AttentiveFP(node_feat_size=39,
+# model = attentivefp.AttentiveFPGNN(node_feat_size=39,
                                    edge_feat_size=10,
                                    num_layers=2,
                                    num_timesteps=2,
