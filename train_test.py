@@ -36,11 +36,12 @@
 # from sklearn.metrics import roc_auc_score
 
 from functools import partial
+
+import dgl
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
-import dgl
 from dgl import model_zoo
 from dgl.data.chem import BaseAtomFeaturizer
 from dgl.data.chem import BaseBondFeaturizer
@@ -172,13 +173,13 @@ def run_a_train_epoch(n_epochs, epoch, model, data_loader, loss_criterion, optim
 
 
 model = model_zoo.chem.AttentiveFP(node_feat_size=39,
-                              # model = attentivefp.AttentiveFPGNN(node_feat_size=39,
-                              edge_feat_size=10,
-                              num_layers=2,
-                              num_timesteps=2,
-                              graph_feat_size=200,
-                              output_size=1,
-                              dropout=0.2)
+                                   # model = attentivefp.AttentiveFPGNN(node_feat_size=39,
+                                   edge_feat_size=10,
+                                   num_layers=2,
+                                   num_timesteps=2,
+                                   graph_feat_size=200,
+                                   output_size=1,
+                                   dropout=0.2)
 
 train_loader = DataLoader(dataset=list(zip(train_smi, train_graph, train_sol)), batch_size=128,
                           collate_fn=collate_molgraphs)
@@ -196,7 +197,7 @@ for e in range(n_epochs):
     scores.append(score)
 model.eval()
 torch.save(model, 'model.pkl')
-plt.plot(range(n_epochs), scores,)
+plt.plot(range(n_epochs), scores, )
 plt.title(f'mean loss of training(epoch:{n_epochs})')
 plt.savefig(f'mean_loss_{n_epochs}.jpg')
 
@@ -222,6 +223,7 @@ def drawmol(idx, dataset, timestep):
         bond_feats = bond_feats.to('cuda:0')
 
     _, atom_weights = model(bg, atom_feats, bond_feats, get_node_weight=True)
+
     assert timestep < len(atom_weights), 'Unexpected id for the readout round'
     atom_weights = atom_weights[timestep]
     min_value = torch.min(atom_weights)
