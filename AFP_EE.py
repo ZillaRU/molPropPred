@@ -95,7 +95,8 @@ def run_a_train_epoch(n_epochs, epoch, model, batched_mol_graphs, samples, loss_
     if torch.cuda.is_available():
         batched_mol_graphs.to(torch.device('cuda:0'))
     # g, samples, node_feats, edge_feats, get_node_weight=False
-    prediction = model(batched_mol_graphs, samples, batched_mol_graphs.ndata['hv'], batched_mol_graphs.edata['he']).squeeze()
+    prediction = model(batched_mol_graphs, samples, batched_mol_graphs.ndata['hv'],
+                       batched_mol_graphs.edata['he']).squeeze()
     loss = (loss_criterion(prediction, labels).float()).mean()
     # loss = loss_criterion(prediction, labels)
     # print(loss.shape)
@@ -107,7 +108,17 @@ def run_a_train_epoch(n_epochs, epoch, model, batched_mol_graphs, samples, loss_
     mae = sum(np.abs(labels.detach().numpy() - prediction.detach().numpy())) / (list(labels.size())[0])
     print('epoch {:d}/{:d}, training total loss {:.4f}'.format(epoch + 1, n_epochs, total_loss))
     print('MAE: ', mae)
-    return total_loss
+    return total_loss, mae
+
+
+def test_model(batched_mol_graphs, samples):
+    labels = torch.tensor(samples[:, -1]).float()
+    samples = samples[:, :-1].astype(int)
+    prediction = model(batched_mol_graphs, samples, batched_mol_graphs.ndata['hv'],
+                       batched_mol_graphs.edata['he']).squeeze()
+    mae = sum(np.abs(labels.detach().numpy() - prediction.detach().numpy())) / (list(labels.size())[0])
+    print(f'---------- test MAE: {mae} -----------')
+    return mae
 
 
 # model = model_zoo.chem.AttentiveFP(node_feat_size=39,
@@ -172,23 +183,46 @@ model = AFP_EE_Predictor(node_feat_size=atom_feat_size,
                          dropout=0.
                          )
 
-# Training
+# load data
 train_data = np.load(train_file[:-4] + '_id.npy', allow_pickle=True)
-loss_fn = nn.MSELoss(reduction='none')
+test_data = np.load(test_file[:-4] + '_id.npy', allow_pickle=True)
 
+# set training regime
+loss_fn = nn.MSELoss(reduction='none')
 # loss_fn = nn.KLDivLoss(reduction='mean')
 optimizer = torch.optim.Adam(model.parameters(), lr=10 ** (-2.5), weight_decay=10 ** (-5.0))
-n_epochs = 120
-epochs = []
-scores = []
+n_epochs = 400
+epochs, t_epos = [], []
+scores, maes, tmaes = [], [], []
 for e in range(n_epochs):
-    score = run_a_train_epoch(n_epochs, e, model, bg, train_data, loss_fn, optimizer)
+    score, mae = run_a_train_epoch(n_epochs, e, model, bg, train_data, loss_fn, optimizer)
     epochs.append(e)
     scores.append(score)
+    if (e+1) % 10 == 0:
+        tmae = test_model(bg, test_data)
+        t_epos.append(e)
+        tmaes.append(tmae)
+    maes.append(mae)
 
-torch.save(model, 'model.pkl')
+
+torch.save(model, f'model_epo{n_epochs}.pkl')
+
+plt.clf()
 plt.plot(range(n_epochs), scores)
-plt.title(f'mean loss of training(epoch:{n_epochs})')
-plt.savefig(f'mean_loss_{n_epochs}.jpg')
+plt.title(f'Loss of training(epoch:{n_epochs})')
+plt.savefig(f'loss_of_{n_epochs}.jpg')
+
+plt.clf()
+plt.plot(range(n_epochs), maes)
+plt.title(f'MAE of training(epoch:{n_epochs})')
+plt.savefig(f'MAE_{n_epochs}.jpg')
 
 model.eval()
+
+plt.clf()
+plt.plot(t_epos, tmaes)
+plt.title(f'MAE of testing (epoch:{n_epochs})')
+plt.savefig(f'test MAE_{n_epochs}.jpg')
+
+# Testing
+print('MAE: ', test_model(bg, test_data))
